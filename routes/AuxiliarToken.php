@@ -2,7 +2,7 @@
 
 class AuxiliarToken
 {
-    private const SECRET_KEY = 'TIPI03Senac2025'; // Variável de ambiente
+    private const SECRET_KEY = 'SECRET_KEY'; // Variável de ambiente
 
     /**
      * O que é essa parte: Documentação para outros desenvolvedores explicando o que a função faz, quais parâmetros recebe e o que retorna.
