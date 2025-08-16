@@ -1,0 +1,92 @@
+.text-bg-edit {
+    width: 40px;
+    height: 40px;
+    border: none;
+    color: #fff;
+    background: #1E90FF;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.5s ease;
+    a {
+        color: #fff;
+        text-decoration: none;
+    }
+}
+
+.text-bg-edit:hover {
+    background: #1C86EE;
+}
+
+.desativar {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.5s ease;
+    a {
+        color: #fff;
+        text-decoration: none;
+    }
+}
+
+.desativar:hover {
+    background: #c82333;
+}
+
+.courseImg {
+    width: 120px;
+    border-radius: 20px;
+}
+
+.novoCurso{
+    width: 160px;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    background: #28A76C;
+    border-radius: 20px;
+    margin-left: 30px;
+    a{
+        color: #fff;
+        text-decoration: none;
+    }
+}
+
+.file-input{
+    display: none;
+}
+
+.add-course{
+    border-radius: 8px;
+    margin-left: 1360px;
+    background: #1C86EE;
+    border: none;
+    cursor: pointer;
+    a{
+        text-decoration: none;
+        color: #fff;
+    }
+}
+
+.preview-image{
+    width: 495px;
+    height: 380px;
+    cursor: pointer;
+    margin-top: -18px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+}
+
+.desc-curso{
+    width: 1020px;
+    height: 150px;
+}
+
+.update-form form{
+    display: flex;
+    flex-direction: column;
+}
+.update-form{
+    width: 390px;
+}
