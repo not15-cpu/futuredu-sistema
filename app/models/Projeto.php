@@ -121,10 +121,11 @@ class Projeto extends Model
         }
         
         public function ListarProjetosIncritos($id){
-            $sql = "SELECT * FROM tbl_participacao_projeto pp INNER JOIN tbl_projeto p ON pp.id_projeto = p.id_projeto WHERE pp.id_aluno = :alunoId";
+            $sql = "SELECT * FROM tbl_participacao_projeto pp INNER JOIN tbl_projeto p ON pp.id_projeto = p.id_projeto 
+                    INNER JOIN tbl_professor pf ON p.id_professor = pf.id_professor INNER JOIN tbl_funcionario f ON pf.id_funcionario = f.id_funcionario WHERE pp.id_aluno = :alunoId";
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(":alunoId", $id);
             $stmt->execute();
-            return $stmt;
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 }
