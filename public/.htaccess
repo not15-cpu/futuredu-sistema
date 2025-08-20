@@ -1,0 +1,12 @@
+#Ativas o mecanismo de rescrita do Apache
+RewriteEngine On
+
+#Definir o caminho base da aplicação
+RewriteBase /sistema-escola/public/
+
+RewriteCond %{REQUEST_FILENAME} !-f
+
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
