@@ -2,7 +2,7 @@
 
 class AuxiliarToken
 {
-    private const SECRET_KEY = 'SECRET_KEY'; // Variável de ambiente
+    private const SECRET_KEY = 'TIPI03Senac2025'; // Variável de ambiente
 
     /**
      * O que é essa parte: Documentação para outros desenvolvedores explicando o que a função faz, quais parâmetros recebe e o que retorna.
@@ -77,6 +77,31 @@ class AuxiliarToken
             return null;
         }
 
+        return $payload;
+    }
+
+
+    /** Gera um JWT específico para recuperação de senha */
+    public static function gerarReset(int $id, string $email, int $ttlSegundos = 3600): string
+    {
+        $agora = time();
+        $dados = [
+            'sub'   => $id,            
+            'email' => $email,
+            'scope' => 'pwd_reset',    
+            'iat'   => $agora,         
+            'exp'   => $agora + $ttlSegundos
+        ];
+        return self::gerar($dados); 
+    }
+
+    /** Valida token de reset e confere o escopo */
+    public static function validarReset(string $token): ?array
+    {
+        $payload = self::validar($token);
+        if (!$payload || ($payload['scope'] ?? null) !== 'pwd_reset') {
+            return null;
+        }
         return $payload;
     }
 
