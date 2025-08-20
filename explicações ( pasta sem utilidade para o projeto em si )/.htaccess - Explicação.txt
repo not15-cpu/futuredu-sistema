@@ -1,0 +1,27 @@
+.htaccess ->
+
+RewriteEngine On				      |
+						      |
+RewriteBase /sistema-escola/public/		      |
+							
+RewriteCond %{REQUEST_FILENAME} !-f
+
+RewriteCond %{REQUEST_FILENAME} !-d
+
+RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+--------------------------------------------------------
+Claro, vou explicar de forma simples!
+
+RewriteEngine On: Isso liga o mecanismo de reescrita do Apache, que permite mudar as URLs que o servidor vai usar para acessar páginas.
+
+RewriteBase /sistema-escola/public/: Define o "caminho base" da aplicação. Ou seja, todas as URLs que o Apache vai tentar reescrever, partem dessa pasta (/sistema-escola/public/).
+
+RewriteCond %{REQUEST_FILENAME} !-f: Isso verifica se o que o usuário está pedindo (a URL) não é um arquivo físico no servidor (por exemplo, um arquivo .html ou .jpg).
+
+RewriteCond %{REQUEST_FILENAME} !-d: Verifica se o que o usuário está pedindo não é uma pasta/diretório no servidor.
+
+RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]: Agora, se não for um arquivo nem uma pasta, essa linha manda tudo para o index.php, passando a URL que o usuário pediu como parâmetro url. O [QSA,L] faz algumas coisas extras:
+
+QSA significa "Query String Append", ou seja, mantém qualquer parâmetro que já tenha na URL.
+L significa "Last", ou seja, essa é a última regra a ser aplicada se ela for verdadeira.
+Em resumo: se a URL não corresponder a um arquivo ou diretório real, o Apache vai redirecionar tudo para o index.php com a URL que foi pedida. Isso é útil para frameworks, como o Laravel, que usam "URLs amigáveis".
