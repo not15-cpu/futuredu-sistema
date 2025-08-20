@@ -126,4 +126,54 @@ class Aluno extends Model
         $stmt->execute();
         return $stmt;
     }
+
+    public function getAlunoEmail($email){
+        $sql = "SELECT * FROM tbl_aluno WHERE email_aluno = :e LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(":e", $email);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function salvarTokenReset($id, $hash, $exp){
+        $sql = "UPDATE tbl_aluno SET reset_token_hash = :h,
+                reset_token_expires = :e WHERE id_aluno = :ia";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(":h", $hash);
+        $stmt->bindValue(":e", $exp);
+        $stmt->bindValue(":ia", $id);
+        $stmt->execute();
+        return $stmt;
+    }
+
+    public function getAlunoHash($hash){
+        $sql = "SELECT id_aluno, reset_token_expires FROM tbl_aluno WHERE reset_token_hash = :h";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(":h", $hash);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function limparReset($id){
+        $sql = "UPDATE tbl_aluno SET
+                reset_token_hash = NULL,
+                reset_token_expires = NULL
+                WHERE id_aluno = :ia";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(":ia", $id);
+        $stmt->execute();
+        return $stmt;
+    }
+
+    public function atualizarSenha($id, $senha){
+        $hash = password_hash($senha, PASSWORD_ARGON2ID);
+        $sql = "UPDATE tbl_aluno SET senha_aluno = :s,
+                data_atualizacao_aluno = NOW()
+                WHERE id_aluno = :ia";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(":s", $hash);
+        $stmt->bindValue(":ia", $id);
+        $stmt->execute();
+        return $stmt;
+    }
 }
