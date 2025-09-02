@@ -98,37 +98,55 @@ class Aluno extends Model
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function postCadastroAluno($nome, $cpf, $rg, $dataNasc, $email, $senha, $tel1, $tel2, $cep, $endereco, $numero, $complemento, $bairro, $cidade, $estado, $foto, $alt, $nomeResponsavel, $telResponsavel, $emailResponsavel)
-    {
-        $sql = "INSERT INTO tbl_aluno(nome_aluno, cpf_aluno, rg_aluno, 
-                                      data_nasc_aluno, email_aluno, senha_aluno,
-                                      telefone1_aluno, cep_aluno, endereco_aluno,
-                                      numero_aluno, complemento_aluno, bairro_aluno,
-                                      cidade_aluno, estado_aluno, foto_aluno, alt_aluno,
-                                      nome_responsavel_aluno, telefone_responsavel_aluno,
-                                      email_responsavel_aluno, data_criacao_aluno)
-                                     VALUES(:nome, :cpf, :rg, :dataNasc, :email, :hash,
-                                            :tel1, :cep, :endereco, :numero, :complemento,
-                                            :bairro, :cidade, :estado, :foto, :alt, :nomeResponsavel,
-                                            :telefoneResponsavel, :emailResponsavel, NOW())";
+    public function postCadastroAluno(
+        $nome, $cpf, $rg, $dataNasc, $email, $senha,
+        $tel1, $tel2, $cep, $endereco, $numero, $complemento,
+        $bairro, $cidade, $estado, $foto, $alt,
+        $nomeResponsavel, $telResponsavel, $emailResponsavel
+    ) {
+        $sql = "INSERT INTO tbl_aluno(
+                    nome_aluno, cpf_aluno, rg_aluno, 
+                    data_nasc_aluno, email_aluno, senha_aluno,
+                    telefone1_aluno, telefone2_aluno, cep_aluno, endereco_aluno,
+                    numero_aluno, complemento_aluno, bairro_aluno,
+                    cidade_aluno, estado_aluno, foto_aluno, alt_aluno,
+                    nome_responsavel, telefone_responsavel,
+                    email_responsavel, data_criacao_aluno
+                )
+                VALUES(
+                    :nome, :cpf, :rg, :dataNasc, :email, :hash,
+                    :tel1, :tel2, :cep, :endereco, :numero, :complemento,
+                    :bairro, :cidade, :estado, 'sem_imagem.png', :alt,
+                    :nomeResponsavel, :telefoneResponsavel, :emailResponsavel, NOW()
+                )";
+    
         $hash = password_hash($senha, PASSWORD_ARGON2ID);
         $stmt = $this->db->prepare($sql);
+    
         $stmt->bindValue(":nome", $nome);
-        $stmt->bindValue(":nome", $cpf);
-        $stmt->bindValue(":nome", $rg);
-        $stmt->bindValue(":nome", $dataNasc);
-        $stmt->bindValue(":nome", $email);
-        $stmt->bindValue(":nome", $hash);
-        $stmt->bindValue(":nome", $tel1);
-        $stmt->bindValue(":nome", $cep);
-        $stmt->bindValue(":nome", $endereco);
-        $stmt->bindValue(":nome", $numero);
-        $stmt->bindValue(":nome", $nome);
-        $stmt->bindValue(":nome", $nome);
-        $stmt->bindValue(":nome", $nome);
+        $stmt->bindValue(":cpf", $cpf);
+        $stmt->bindValue(":rg", $rg);
+        $stmt->bindValue(":dataNasc", $dataNasc);
+        $stmt->bindValue(":email", $email);
+        $stmt->bindValue(":hash", $hash);
+        $stmt->bindValue(":tel1", $tel1);
+        $stmt->bindValue(":tel2", $tel2);
+        $stmt->bindValue(":cep", $cep);
+        $stmt->bindValue(":endereco", $endereco);
+        $stmt->bindValue(":numero", $numero);
+        $stmt->bindValue(":complemento", $complemento);
+        $stmt->bindValue(":bairro", $bairro);
+        $stmt->bindValue(":cidade", $cidade);
+        $stmt->bindValue(":estado", $estado);
+        $stmt->bindValue(":alt", $alt);
+        $stmt->bindValue(":nomeResponsavel", $nomeResponsavel);
+        $stmt->bindValue(":telefoneResponsavel", $telResponsavel);
+        $stmt->bindValue(":emailResponsavel", $emailResponsavel);
+    
         $stmt->execute();
         return $stmt;
     }
+    
 
     public function getAlunoEmail($email)
     {
@@ -188,6 +206,18 @@ class Aluno extends Model
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(":s", $hash);
         $stmt->bindValue(":ia", $id);
+        $stmt->execute();
+        return $stmt;
+    }
+
+    public function atualizarFoto($id, $foto)
+    {
+        $sql = "UPDATE tbl_aluno SET foto_aluno = :f,
+                data_atualizacao_aluno = NOW()
+                WHERE id_aluno = :i";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(":f", $foto);
+        $stmt->bindValue(":i", $id);
         $stmt->execute();
         return $stmt;
     }

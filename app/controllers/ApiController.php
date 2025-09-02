@@ -15,6 +15,7 @@ class ApiController extends Controller
     private $projetoModel;
     private $matriculaModel;
     private $participacaoModel;
+    private $notificModel;
 
     public function __construct()
     {
@@ -27,6 +28,7 @@ class ApiController extends Controller
         $this->alunoModel = new Aluno();
         $this->matriculaModel = new Matricula();
         $this->notasModel = new Nota();
+        $this->notificModel = new Notificacoes();
     }
 
     public function index()
@@ -50,7 +52,7 @@ class ApiController extends Controller
         }
 
         // O json está trazendo a variavel ja codificada |  
-        echo json_encode($cursos, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        echo json_encode(['mensagem' => 'Cursos:', 'dados' => $cursos, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE]);
     }
     //-----------Fim Api Cursos------------
 
@@ -287,24 +289,60 @@ class ApiController extends Controller
     {
         if ($_SERVER["REQUEST_METHOD"] === 'PATCH') {
 
-            parse_str(file_get_contents("php://input"), $dados);
+            $dados = $_POST;
 
-            if (empty($dados)) {
+            // Se houver arquivo, adiciona ao array de dados
+            if (!empty($_FILES['foto']['name'])) {
+                $arquivo = null;
+                $tmpName = $_FILES['foto']['tmp_name'];
+                $nomeArquivo = uniqid("aluno_") . ".webp";
+                $caminhoFinal = __DIR__ . "/uploads/alunos/" . $nomeArquivo;
 
+                $info = getimagesize($tmpName);
+                $img = null;
+                switch ($info['mime']) {
+                    case 'image/jpeg':
+                        $img = imagecreatefromjpeg($tmpName);
+                        break;
+                    case 'image/png':
+                        $img = imagecreatefrompng($tmpName);
+                        imagepalettetotruecolor($img);
+                        imagealphablending($img, true);
+                        imagesavealpha($img, true);
+                        break;
+                    case 'image/webp':
+                        $img = imagecreatefromwebp($tmpName);
+                        break;
+                }
+
+                if ($img) {
+                    imagewebp($img, $caminhoFinal, 80);
+                    imagedestroy($img);
+                    $arquivo = $nomeArquivo;
+                    $dados['foto_aluno'] = $arquivo; // importante: use mesmo nome que o app envia
+                }
+            }
+
+            // Se $dados estiver vazio e houver arquivo, continue
+            if (empty($dados) && empty($arquivo)) {
                 http_response_code(404);
                 echo json_encode(["erro" => "Nenhum dado enviado para atualizar."]);
                 return;
             }
 
+
+            // Atualiza no model
             $resultado = $this->alunoModel->patchAtualizarAluno($dados, $id);
 
             if ($resultado) {
                 http_response_code(200);
-                echo json_encode(["Mensagem" => "Aluno Atualizado com sucesso!!!"]);
+                echo json_encode([
+                    "Mensagem" => "Aluno atualizado com sucesso!",
+                    "arquivo" => $arquivo
+                ]);
             } else {
-
                 http_response_code(500);
-                echo json_encode(["erro" => "Erro ao atualizar o aluno. Erro de Servidor."]);
+                echo json_encode(["erro" => "Erro ao atualizar o aluno."]);
             }
         } else {
             http_response_code(405);
@@ -416,22 +454,7 @@ class ApiController extends Controller
             return;
         }
 
-        $headers = getallheaders();
-
-        $authHeader =  $headers['Authorization'] ?? '';
-        if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-            http_response_code(401);
-            echo json_encode(["erro" => "Token não fornecido ou malformado"]);
-            return;
-        }
-
-        $payload = AuxiliarToken::validar($matches[1]);
-
-        if (!$payload) {
-            http_response_code(401);
-            echo json_encode(["erro" => "Token inválido ou expirado"]);
-            return;
-        }
+        $this->verificar($id);
 
         $matriculas = $this->matriculaModel->getAlunoMatriculas($id);
 
@@ -454,42 +477,67 @@ class ApiController extends Controller
             $rg = $_POST['rg_aluno'] ?? null;
             $dataNasc = $_POST['data_nasc_aluno'] ?? null;
             $telefone1 = $_POST['telefone1_aluno'] ?? null;
+            $telefone2 = $_POST['telefone2_aluno'] ?? null;
             $email = $_POST['email_aluno'] ?? null;
-            $cepAluno = $_POST['endereco_aluno'] ?? null;
+            $senha = $_POST['senha_aluno'] ?? null;
+            $cepAluno = $_POST['cep_aluno'] ?? null;
+            $enderecoAluno = $_POST['endereco_aluno'] ?? null;
             $numeroAluno = $_POST['numero_aluno'] ?? null;
             $complementoAluno = $_POST['complemento_aluno'] ?? null;
             $bairroAluno = $_POST['bairro_aluno'] ?? null;
             $cidadeAluno = $_POST['cidade_aluno'] ?? null;
             $estadoAluno = $_POST['estado_aluno'] ?? null;
             $fotoAluno = $_POST['foto_aluno'] ?? null;
-            $altAluno = $nome . ' foto' ?? null;
+            $altAluno = $nome ? $nome . ' foto' : null;
             $nomeResponsavel = $_POST['nome_mae'] ?? null;
             $telResponsavel = $_POST['telefone_mae'] ?? null;
             $emailResponsavel = $_POST['email_mae'] ?? null;
-            $senha = $_POST['senha_aluno'] ?? null;
 
             if ((!$email || !$senha)) {
-
                 http_response_code(400);
                 echo json_encode(["erro" => "Email e senha são obrigatórios!"]);
                 return;
             }
 
-            $aluno = $this->alunoModel->postLoginAluno($email, $senha);
+            $alunoId = $this->alunoModel->postCadastroAluno(
+                $nome,
+                $cpf,
+                $rg,
+                $dataNasc,
+                $email,
+                $senha,
+                $telefone1,
+                $telefone2,
+                $cepAluno,
+                $enderecoAluno,
+                $numeroAluno,
+                $complementoAluno,
+                $bairroAluno,
+                $cidadeAluno,
+                $estadoAluno,
+                $fotoAluno,
+                $altAluno,
+                $nomeResponsavel,
+                $telResponsavel,
+                $emailResponsavel
+            );
 
-            if ($aluno) {
-
-                http_response_code(200);
-                echo json_encode(["mensagem" => "Tudo Certo!", "Aluno" => $aluno], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            if ($alunoId) {
+                http_response_code(201);
+                echo json_encode([
+                    "mensagem" => "Aluno cadastrado com sucesso!",
+                    "aluno_id" => $alunoId
+                ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
             } else {
-                http_response_code(401);
-                echo json_encode(["erro" => "Email ou senha invalidos ou aluno inativo!"]);
+                http_response_code(500);
+                echo json_encode(["erro" => "Erro ao cadastrar aluno."]);
             }
         } else {
             http_response_code(405);
             echo json_encode(["erro" => "Método não permitido!"]);
         }
     }
+
 
     public function ListarNotasAluno($id)
     {
@@ -684,6 +732,209 @@ class ApiController extends Controller
             http_response_code(200);
             echo json_encode(['mensagem' => 'Senha atualizada com sucesso'], JSON_UNESCAPED_UNICODE);
             return;
+        }
+    }
+
+    public function listarNotifics($alunoId)
+    {
+        if (!ctype_digit($alunoId) || (int)$alunoId <= 0) {
+            http_response_code(400);
+            echo json_encode(["erro" => "ID inválido."]);
+            return;
+        }
+
+        $headers = getallheaders();
+
+        $authHeader =  $headers['Authorization'] ?? '';
+        if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+            http_response_code(401);
+            echo json_encode(["erro" => "Token não fornecido ou malformado"]);
+            return;
+        }
+        $payload = AuxiliarToken::validar($matches[1]);
+        if (!$payload) {
+            http_response_code(401);
+            echo json_encode(["erro" => "Token inválido ou expirado"]);
+            return;
+        }
+
+        $notifics = $this->notificModel->getAlunoNotifcs($alunoId);
+
+        if ($notifics) {
+            http_response_code(200);
+            echo json_encode([
+                "mensagem" => "sucesso",
+                "dados" => $notifics
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            exit;
+        } else {
+            echo json_encode(['mensagem' => 'Nenhuma notificação encontrada']);
+            exit;
+        }
+    }
+
+    public function atualizarFoto($id)
+    {
+        if (!ctype_digit($id) || (int)$id <= 0) {
+            http_response_code(400);
+            echo json_encode(["erro" => "ID inválido."]);
+            return;
+        }
+
+        $this->verificar($id);
+
+        if (!isset($_FILES['foto_aluno']) || $_FILES['foto_aluno']['error'] !== UPLOAD_ERR_OK) {
+            http_response_code(400);
+            echo json_encode(['erro' => 'Nenhuma foto recebida']);
+            return;
+        }
+
+        $ext = pathinfo($_FILES['foto_aluno']['name'], PATHINFO_EXTENSION);
+        $novoNome = $id . '_' . time() . '.' . $ext;
+        $destino = "uploads/alunos/" . $novoNome;
+
+        if (move_uploaded_file($_FILES['foto_aluno']['tmp_name'], $destino)) {
+            // Atualiza no banco
+            $atualizar = $this->alunoModel->atualizarFoto($id, $novoNome);
+            if($atualizar){
+                http_response_code(200);
+                echo json_encode(['sucesso' => true, 'foto' => $novoNome]);
+            }
+        } else {
+            http_response_code(500);
+            echo json_encode(['erro' => 'Falha ao mover a foto']);
+        }
+    }
+
+
+    public function uploadFoto($file, $id)
+    {
+        $dir = 'uploads/aluno/';
+
+        if (!file_exists($dir)) { // corrigido: estava invertido
+            mkdir($dir, 0755, true);
+        }
+
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $novoNome = $id . '_' . '.webp'; // sempre salvar em webp
+        $destino = $dir . $novoNome;
+
+        // Verifica se é uma imagem válida
+        if (!@getimagesize($file['tmp_name'])) {
+            return 'sem_imagem.png';
+        }
+
+        // Carregar a imagem de acordo com a extensão original
+        switch ($ext) {
+            case 'jpg':
+            case 'jpeg':
+                $img = imagecreatefromjpeg($file['tmp_name']);
+                break;
+            case 'png':
+                $img = imagecreatefrompng($file['tmp_name']);
+                break;
+            case 'gif':
+                $img = imagecreatefromgif($file['tmp_name']);
+                break;
+            default:
+                return 'sem_imagem.png'; // tipo não suportado
+        }
+
+        if ($img) {
+            // Salva em WebP (80 = qualidade)
+            imagewebp($img, $destino, 80);
+            imagedestroy($img);
+
+            return $novoNome;
+        } else {
+            return 'sem_imagem.png';
+        }
+    }
+
+    public function listarNotaSigla($ida, $ids)
+    {
+        if($_SERVER['REQUEST_METHOD'] !== 'GET'){
+            http_response_code(403);
+            echo json_encode(['erro' => "Método não permitido!"], JSON_PRETTY_PRINT, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if (!ctype_digit($ida) || (int)$ida <= 0) {
+            http_response_code(400);
+            echo json_encode(["erro" => "ID inválido."]);
+            return;
+        }
+
+        $this->verificar($ida);
+
+        $notas = $this->notasModel->getNotasSigla($ida, $ids);
+
+        if($notas){
+            http_response_code(200);
+            echo json_encode(['mensagem' => 'Notas: ', $notas], JSON_PRETTY_PRINT, JSON_UNESCAPED_UNICODE);
+            exit;
+        }else{
+            http_response_code(401);
+            echo json_encode(['erro' => 'Notas não encontradas!']);
+            exit;
+        }
+    }
+
+    public function listarMedia($ida)
+    {
+        if($_SERVER['REQUEST_METHOD'] !== 'GET'){
+            http_response_code(403);
+            echo json_encode(['erro' => "Método não permitido!"], JSON_PRETTY_PRINT, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if (!ctype_digit($ida) || (int)$ida <= 0) {
+            http_response_code(400);
+            echo json_encode(["erro" => "ID inválido."]);
+            return;
+        }
+
+        $this->verificar($ida);
+
+        $media = $this->notasModel->getMedia($ida);
+
+        if($media){
+            http_response_code(200);
+            echo json_encode(['mensagem' => 'Notas:', 'dados' => $media], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            exit;
+        }else{
+            http_response_code(401);
+            echo json_encode(['erro' => 'Notas não encontradas!']);
+            exit;
+        }
+    }
+
+    public function listarMediasCurso($ida, $idc)
+    {
+        if($_SERVER['REQUEST_METHOD'] !== 'GET'){
+            http_response_code(403);
+            echo json_encode(['erro' => "Método não permitido!"], JSON_PRETTY_PRINT, JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if (!ctype_digit($ida) || (int)$ida <= 0) {
+            http_response_code(400);
+            echo json_encode(["erro" => "ID inválido."]);
+            return;
+        }
+
+        $this->verificar($ida);
+
+        $medias = $this->notasModel->getMediaCurso($ida, $idc);
+
+        if($medias){
+            http_response_code(200);
+            echo json_encode(['mensagem' => 'Notas:', 'dados' => $medias], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            exit;
+        }else{
+            http_response_code(401);
+            echo json_encode(['erro' => 'Notas não encontradas!']);
+            exit;
         }
     }
 }
